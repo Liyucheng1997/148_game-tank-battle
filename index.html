@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>坦克大战 · Battle City</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <h1 class="title">坦克大战</h1>
+    <div class="main-row">
+      <div class="field-wrap">
+        <canvas id="field"></canvas>
+
+        <div id="overlay-menu" class="overlay">
+          <h2>坦克大战</h2>
+          <p class="sub">经典玩法复刻</p>
+          <button id="btn-1p" class="menu-btn">① 单人模式</button>
+          <button id="btn-2p" class="menu-btn">② 双人合作</button>
+          <div class="help">
+            <p><b>P1</b>：方向键移动 &nbsp;|&nbsp; Enter / ？ 开火</p>
+            <p><b>P2</b>：WASD 移动 &nbsp;|&nbsp; 空格 开火</p>
+            <p>P 暂停 &nbsp;|&nbsp; M 静音</p>
+          </div>
+        </div>
+
+        <div id="overlay-pause" class="overlay">
+          <h2>已暂停</h2>
+          <button id="btn-resume" class="menu-btn">继续 (P)</button>
+        </div>
+
+        <div id="overlay-gameover" class="overlay">
+          <h2 class="danger">游戏结束</h2>
+          <p class="sub">最终得分：<span id="final-score">0</span></p>
+          <button id="btn-restart" class="menu-btn">返回菜单 (Enter)</button>
+        </div>
+
+        <div id="overlay-levelclear" class="overlay">
+          <h2>第 <span id="cleared-level">1</span> 关 通过！</h2>
+          <button id="btn-next-level" class="menu-btn">下一关 (Enter)</button>
+        </div>
+
+        <div id="overlay-victory" class="overlay">
+          <h2 class="win">恭喜通关！</h2>
+          <p class="sub">总得分：<span id="victory-score">0</span></p>
+          <button id="btn-victory-restart" class="menu-btn">返回菜单 (Enter)</button>
+        </div>
+      </div>
+
+      <aside class="hud">
+        <div class="hud-block">
+          <div class="hud-row"><span>关卡</span><b id="hud-level">1</b></div>
+          <div class="hud-row"><span>剩余敌军</span><b id="hud-enemies-left">0</b></div>
+        </div>
+        <div class="hud-block">
+          <div class="hud-row p1"><span>P1 分数</span><b id="hud-score1">0</b></div>
+          <div class="hud-row p1"><span>P1 生命</span><b id="hud-lives1">3</b></div>
+        </div>
+        <div class="hud-block" id="hud-p2-row" style="display:none">
+          <div class="hud-row p2"><span>P2 分数</span><b id="hud-score2">0</b></div>
+          <div class="hud-row p2"><span>P2 生命</span><b id="hud-lives2">3</b></div>
+        </div>
+        <div class="hud-block legend">
+          <div class="legend-title">道具图鉴</div>
+          <div>★ 升级火力</div>
+          <div>🛡 无敌护盾</div>
+          <div>💣 全屏清敌</div>
+          <div>⏱ 冻结敌军</div>
+          <div>⛏ 铁甲基地</div>
+          <div>♥ 额外生命</div>
+        </div>
+        <button id="btn-mute" class="menu-btn small">🔊 声音</button>
+      </aside>
+    </div>
+  </div>
+
+  <script src="js/constants.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/levels.js"></script>
+  <script src="js/input.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/entities.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
