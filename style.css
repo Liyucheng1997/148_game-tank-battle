@@ -23,14 +23,29 @@ body {
 
 .field-wrap {
   position: relative;
-  width: 624px;
-  height: 624px;
-  border: 4px solid #444;
-  box-shadow: 0 0 0 4px #111, 0 0 24px rgba(0,0,0,0.6);
-  background: #000;
+  /* 2.5D 斜视角画面略宽于高，按视口自适应 */
+  width: min(1000px, calc(100vw - 250px), calc((100vh - 100px) * 1.4));
+  aspect-ratio: 7 / 5;
+  border: 3px solid #3a3f48;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 0 0 3px #0a0c10, 0 12px 40px rgba(0,0,0,0.7);
+  background: #121720;
 }
 
-#field { display: block; width: 624px; height: 624px; }
+#field { display: block; width: 100%; height: 100%; }
+
+.loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9aa0a6;
+  font-size: 15px;
+  letter-spacing: 2px;
+}
+.loading.error { color: #ff7a6b; padding: 20px; text-align: center; }
 
 .overlay {
   position: absolute;
@@ -40,11 +55,13 @@ body {
   align-items: center;
   justify-content: center;
   gap: 10px;
-  background: rgba(5, 8, 15, 0.86);
+  background: radial-gradient(ellipse at center, rgba(8, 12, 20, 0.55) 0%, rgba(5, 8, 15, 0.82) 100%);
+  backdrop-filter: blur(1.5px);
   text-align: center;
 }
+#overlay-menu { background: radial-gradient(ellipse at center, rgba(8, 12, 20, 0.35) 0%, rgba(5, 8, 15, 0.7) 100%); backdrop-filter: none; }
 
-.overlay h2 { font-size: 30px; margin: 0 0 4px; color: #ffcc33; letter-spacing: 3px; }
+.overlay h2 { font-size: 34px; margin: 0 0 4px; color: #ffcc33; letter-spacing: 4px; text-shadow: 0 3px 0 #7a4a00, 0 0 24px rgba(255, 190, 40, 0.45); }
 .overlay h2.danger { color: #ff5c4d; }
 .overlay h2.win { color: #7dff8e; }
 .overlay .sub { margin: 0 0 6px; color: #ccc; }
@@ -53,14 +70,15 @@ body {
 .menu-btn {
   font-size: 16px;
   padding: 10px 22px;
-  background: #2b2f3a;
+  background: rgba(30, 34, 44, 0.85);
   color: #ffe066;
   border: 2px solid #ffcc33;
   border-radius: 4px;
   cursor: pointer;
   min-width: 180px;
+  transition: background 0.15s, transform 0.15s;
 }
-.menu-btn:hover { background: #3b4150; }
+.menu-btn:hover { background: rgba(59, 65, 80, 0.95); transform: translateY(-1px); }
 .menu-btn.small { min-width: auto; font-size: 13px; padding: 6px 12px; margin-top: 4px; }
 
 .hud {

@@ -20,6 +20,8 @@ class Bullet {
 
     if (this.x < 0 || this.y < 0 || this.x + this.w > MAP_PX || this.y + this.h > MAP_PX) {
       this.alive = false;
+      const cx = clamp(this.x + this.w / 2, 0, MAP_PX), cy = clamp(this.y + this.h / 2, 0, MAP_PX);
+      game.explosions.push(new Explosion(cx - 9, cy - 9, 18, 'edge'));
       return;
     }
     game.handleBulletTileCollision(this);
@@ -27,10 +29,6 @@ class Bullet {
     game.handleBulletTankCollision(this);
   }
 
-  draw(ctx) {
-    ctx.fillStyle = this.isPlayerBullet ? '#ffe066' : '#ffffff';
-    ctx.fillRect(Math.round(this.x), Math.round(this.y), this.w, this.h);
-  }
 }
 
 // ===================== 坦克 =====================
@@ -135,7 +133,7 @@ class Tank {
   }
 
   updatePlayer(dt, game) {
-    const c = game.input.get(this.playerIndex);
+    const c = game.input.get(this.playerIndex, !game.twoPlayer);
     let dir = null;
     if (c.up) dir = DIR.UP;
     else if (c.down) dir = DIR.DOWN;
@@ -192,68 +190,9 @@ class Tank {
     return null;
   }
 
-  draw(ctx) {
-    ctx.save();
-    ctx.translate(this.x + this.w / 2, this.y + this.h / 2);
-    ctx.rotate(this.dir.rot * Math.PI / 180);
-    const flash = this.isInvulnerable() && Math.floor(performance.now() / 100) % 2 === 0;
-
-    let body, dark;
-    if (this.isPlayer) {
-      const palette = [
-        ['#ffd54a', '#c99a1e'],
-        ['#ffd54a', '#c99a1e'],
-        ['#ffe98a', '#c9a93a'],
-        ['#fff0b0', '#d9b94a'],
-      ];
-      [body, dark] = palette[Math.min(this.level, 3)];
-      if (this.playerIndex === 2) { body = '#8fd0ff'; dark = '#4b7fb0'; }
-    } else {
-      const t = ENEMY_TYPES[this.enemyType];
-      body = t.color; dark = t.dark;
-      if (this.hp < this.maxHp) {
-        // 装甲车受损变色
-        const ratio = this.hp / this.maxHp;
-        body = ratio > 0.5 ? t.color : '#ffb347';
-      }
-    }
-    if (flash) { body = '#ffffff'; dark = '#cccccc'; }
-
-    const w = this.w, h = this.h;
-    ctx.fillStyle = dark;
-    ctx.fillRect(-w / 2, -h / 2, w, h);
-    ctx.fillStyle = body;
-    ctx.fillRect(-w / 2 + 4, -h / 2 + 2, w - 8, h - 4);
-    // 履带
-    ctx.fillStyle = dark;
-    ctx.fillRect(-w / 2, -h / 2, 6, h);
-    ctx.fillRect(w / 2 - 6, -h / 2, 6, h);
-    const tOff = this.moving ? (Math.floor(performance.now() / 100) % 2) * 4 : 0;
-    ctx.fillStyle = '#222';
-    for (let i = -h / 2 + 2 + tOff; i < h / 2; i += 8) {
-      ctx.fillRect(-w / 2 + 1, i, 4, 3);
-      ctx.fillRect(w / 2 - 5, i, 4, 3);
-    }
-    // 炮塔和炮管
-    ctx.fillStyle = dark;
-    ctx.beginPath();
-    ctx.arc(0, 0, w / 4, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#333';
-    ctx.fillRect(-2, -h / 2 - 4, 4, h / 2 + 4);
-
-    if (this.isPlayer && this.level > 0) {
-      ctx.fillStyle = '#fff';
-      ctx.font = 'bold 10px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('★'.repeat(this.level), 0, 3);
-    }
-    ctx.restore();
-  }
 }
 
 // ===================== 道具 =====================
-const POWERUP_LABEL = { star: '★', helmet: '🛡', grenade: '💣', timer: '⏱', shovel: '⛏', tank: '♥' };
 const POWERUP_COLOR = { star: '#ffcc00', helmet: '#66ccff', grenade: '#ff5555', timer: '#66ff99', shovel: '#cc9966', tank: '#ff88cc' };
 
 class PowerUp {
@@ -267,46 +206,18 @@ class PowerUp {
   update() {
     if (performance.now() - this.spawnAt > ITEM_LIFETIME_MS) this.alive = false;
   }
-  draw(ctx) {
-    const blinking = (performance.now() - this.spawnAt) > ITEM_LIFETIME_MS - 3000;
-    if (blinking && Math.floor(performance.now() / 150) % 2 === 0) return;
-    ctx.fillStyle = '#0a0a2a';
-    ctx.fillRect(this.x, this.y, this.w, this.h);
-    ctx.strokeStyle = POWERUP_COLOR[this.type];
-    ctx.lineWidth = 2;
-    ctx.strokeRect(this.x + 1, this.y + 1, this.w - 2, this.h - 2);
-    ctx.fillStyle = POWERUP_COLOR[this.type];
-    ctx.font = 'bold 22px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(POWERUP_LABEL[this.type], this.x + this.w / 2, this.y + this.h / 2 + 1);
-  }
 }
 
 // ===================== 爆炸特效 =====================
+// kind: tank / base / brick / steel / steel_break / bullet / armor / edge（决定 3D 特效样式）
 class Explosion {
-  constructor(x, y, size = TANK_SIZE) {
-    this.x = x; this.y = y; this.size = size;
+  constructor(x, y, size = TANK_SIZE, kind = 'tank') {
+    this.x = x; this.y = y; this.size = size; this.kind = kind;
     this.startAt = performance.now();
     this.duration = 300;
     this.alive = true;
   }
   update() {
     if (performance.now() - this.startAt > this.duration) this.alive = false;
-  }
-  draw(ctx) {
-    const t = (performance.now() - this.startAt) / this.duration;
-    const r = this.size / 2 * (0.4 + t * 0.8);
-    ctx.save();
-    ctx.globalAlpha = 1 - t;
-    ctx.fillStyle = t < 0.5 ? '#fff5b0' : '#ff7b1a';
-    ctx.beginPath();
-    ctx.arc(this.x + this.size / 2, this.y + this.size / 2, r, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#ff3b1a';
-    ctx.beginPath();
-    ctx.arc(this.x + this.size / 2, this.y + this.size / 2, r * 0.5, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
   }
 }

@@ -22,22 +22,31 @@ class Input {
   clearFrame() { this.pressedOnce.clear(); }
 
   // 玩家1: 方向键 + Enter/Slash 开火    玩家2: WASD + Space 开火
-  get(playerIndex) {
-    if (playerIndex === 1) {
-      return {
-        up: this.isDown('ArrowUp'),
-        down: this.isDown('ArrowDown'),
-        left: this.isDown('ArrowLeft'),
-        right: this.isDown('ArrowRight'),
-        shoot: this.isDown('Enter') || this.isDown('Slash') || this.isDown('NumpadEnter'),
-      };
-    }
-    return {
+  // 单人模式下（merged=true）两套按键都控制玩家1
+  get(playerIndex, merged = false) {
+    const arrows = {
+      up: this.isDown('ArrowUp'),
+      down: this.isDown('ArrowDown'),
+      left: this.isDown('ArrowLeft'),
+      right: this.isDown('ArrowRight'),
+      shoot: this.isDown('Enter') || this.isDown('Slash') || this.isDown('NumpadEnter'),
+    };
+    const wasd = {
       up: this.isDown('KeyW'),
       down: this.isDown('KeyS'),
       left: this.isDown('KeyA'),
       right: this.isDown('KeyD'),
       shoot: this.isDown('Space'),
     };
+    if (merged) {
+      return {
+        up: arrows.up || wasd.up,
+        down: arrows.down || wasd.down,
+        left: arrows.left || wasd.left,
+        right: arrows.right || wasd.right,
+        shoot: arrows.shoot || wasd.shoot,
+      };
+    }
+    return playerIndex === 1 ? arrows : wasd;
   }
 }

@@ -1,9 +1,6 @@
 class Game {
   constructor(canvas) {
     this.canvas = canvas;
-    this.canvas.width = MAP_PX;
-    this.canvas.height = MAP_PX;
-    this.ctx = canvas.getContext('2d');
     this.input = new Input();
     this.audio = new SoundFx();
     this.state = STATE.MENU;
@@ -15,7 +12,6 @@ class Game {
     this.level = 0;
     this.dtFrames = 1;
     this._shovelRevertTimer = null;
-    this._waterPhase = 0;
 
     this.dom = {
       level: document.getElementById('hud-level'),
@@ -38,6 +34,7 @@ class Game {
       muteBtn: document.getElementById('btn-mute'),
     };
     this.bindDom();
+    this.view = new Renderer3D(canvas, this);
   }
 
   bindDom() {
@@ -232,6 +229,8 @@ class Game {
   handleBulletTileCollision(bullet) {
     const c0 = Math.floor(bullet.x / UNIT), c1 = Math.floor((bullet.x + bullet.w - 1) / UNIT);
     const r0 = Math.floor(bullet.y / UNIT), r1 = Math.floor((bullet.y + bullet.h - 1) / UNIT);
+    // 特效以子弹中心为准，而不是整个格子中心
+    const bx = bullet.x + bullet.w / 2 - UNIT / 2, by = bullet.y + bullet.h / 2 - UNIT / 2;
     for (let r = r0; r <= r1; r++) {
       for (let c = c0; c <= c1; c++) {
         if (r < 0 || c < 0 || r >= GRID || c >= GRID) continue;
@@ -239,13 +238,14 @@ class Game {
         if (t === TILE.BRICK) {
           this.grid[r][c] = TILE.EMPTY;
           bullet.alive = false;
-          this.explosions.push(new Explosion(c * UNIT, r * UNIT, UNIT));
+          this.explosions.push(new Explosion(bx, by, UNIT, 'brick'));
           this.sfx('hit');
           return;
         } else if (t === TILE.STEEL) {
-          if (bullet.power >= 2) this.grid[r][c] = TILE.EMPTY;
+          const breaks = bullet.power >= 2;
+          if (breaks) this.grid[r][c] = TILE.EMPTY;
           bullet.alive = false;
-          this.explosions.push(new Explosion(c * UNIT, r * UNIT, UNIT));
+          this.explosions.push(new Explosion(bx, by, UNIT, breaks ? 'steel_break' : 'steel'));
           this.sfx('hit');
           return;
         } else if (t === TILE.BASE) {
@@ -260,7 +260,7 @@ class Game {
 
   destroyBase() {
     this.base.alive = false;
-    this.explosions.push(new Explosion(this.base.x, this.base.y, TANK_SIZE * 1.4));
+    this.explosions.push(new Explosion(this.base.x, this.base.y, TANK_SIZE, 'base'));
     this.state = STATE.GAME_OVER;
     this.sfx('explosion');
   }
@@ -273,6 +273,7 @@ class Game {
         bullet.alive = false;
         const killed = tank.hit(this, bullet.power, bullet.owner);
         if (killed) this.onTankKilled(tank, bullet.owner);
+        else this.explosions.push(new Explosion(bullet.x - 6, bullet.y - 6, 18, 'armor'));
         return;
       }
     }
@@ -281,7 +282,7 @@ class Game {
       if (other.isPlayerBullet !== bullet.isPlayerBullet && rectsOverlap(other.rect(), bullet.rect())) {
         other.alive = false;
         bullet.alive = false;
-        this.explosions.push(new Explosion(bullet.x - 6, bullet.y - 6, 18));
+        this.explosions.push(new Explosion(bullet.x - 6, bullet.y - 6, 18, 'bullet'));
         return;
       }
     }
@@ -430,126 +431,6 @@ class Game {
 
   // ================= 渲染 =================
   render() {
-    const ctx = this.ctx;
-    ctx.fillStyle = '#000000';
-    ctx.fillRect(0, 0, MAP_PX, MAP_PX);
-    if (this.state === STATE.MENU || !this.grid) return;
-
-    this.drawGroundLayer(ctx);
-    for (const pu of this.powerups) pu.draw(ctx);
-    for (const b of this.bullets) b.draw(ctx);
-    for (const t of this.allTanks()) if (t.alive) t.draw(ctx);
-    for (const ex of this.explosions) ex.draw(ctx);
-    this.drawForestLayer(ctx);
-  }
-
-  drawGroundLayer(ctx) {
-    for (let r = 0; r < GRID; r++) {
-      for (let c = 0; c < GRID; c++) {
-        const t = this.grid[r][c];
-        const x = c * UNIT, y = r * UNIT;
-        switch (t) {
-          case TILE.BRICK: this.drawBrick(ctx, x, y); break;
-          case TILE.STEEL: this.drawSteel(ctx, x, y); break;
-          case TILE.WATER: this.drawWater(ctx, x, y); break;
-          case TILE.ICE: this.drawIce(ctx, x, y); break;
-          case TILE.BASE: this.drawEagle(ctx, x, y, true); break;
-          case TILE.BASE_DEAD: this.drawEagle(ctx, x, y, false); break;
-        }
-      }
-    }
-  }
-
-  drawForestLayer(ctx) {
-    for (let r = 0; r < GRID; r++) {
-      for (let c = 0; c < GRID; c++) {
-        if (this.grid[r][c] === TILE.FOREST) this.drawForest(ctx, c * UNIT, r * UNIT);
-      }
-    }
-  }
-
-  drawBrick(ctx, x, y) {
-    ctx.fillStyle = '#a1522d';
-    ctx.fillRect(x, y, UNIT, UNIT);
-    ctx.strokeStyle = '#5c2a12';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(x + 0.5, y + 0.5, UNIT - 1, UNIT - 1);
-    ctx.beginPath();
-    ctx.moveTo(x, y + UNIT / 2); ctx.lineTo(x + UNIT, y + UNIT / 2);
-    ctx.moveTo(x + UNIT / 2, y); ctx.lineTo(x + UNIT / 2, y + UNIT / 2);
-    ctx.moveTo(x + UNIT / 4, y + UNIT / 2); ctx.lineTo(x + UNIT / 4, y + UNIT);
-    ctx.moveTo(x + UNIT * 3 / 4, y + UNIT / 2); ctx.lineTo(x + UNIT * 3 / 4, y + UNIT);
-    ctx.stroke();
-  }
-
-  drawSteel(ctx, x, y) {
-    ctx.fillStyle = '#9aa5ad';
-    ctx.fillRect(x, y, UNIT, UNIT);
-    ctx.fillStyle = '#5b666e';
-    ctx.fillRect(x, y, UNIT, 3);
-    ctx.fillRect(x, y, 3, UNIT);
-    ctx.fillStyle = '#d7dee3';
-    ctx.fillRect(x + UNIT - 3, y, 3, UNIT);
-    ctx.fillRect(x, y + UNIT - 3, UNIT, 3);
-  }
-
-  drawWater(ctx, x, y) {
-    ctx.fillStyle = '#1c5fd6';
-    ctx.fillRect(x, y, UNIT, UNIT);
-    ctx.strokeStyle = '#7fb4ff';
-    ctx.lineWidth = 1.5;
-    const phase = (performance.now() / 300) % (Math.PI * 2);
-    for (let i = 0; i < 2; i++) {
-      const yy = y + UNIT / 3 + i * UNIT / 3 + Math.sin(phase + i) * 2;
-      ctx.beginPath();
-      ctx.moveTo(x + 2, yy);
-      ctx.lineTo(x + UNIT - 2, yy);
-      ctx.stroke();
-    }
-  }
-
-  drawIce(ctx, x, y) {
-    ctx.fillStyle = '#d8f2ff';
-    ctx.fillRect(x, y, UNIT, UNIT);
-    ctx.strokeStyle = '#a9d9ee';
-    ctx.strokeRect(x + 0.5, y + 0.5, UNIT - 1, UNIT - 1);
-  }
-
-  drawForest(ctx, x, y) {
-    ctx.save();
-    ctx.globalAlpha = 0.85;
-    ctx.fillStyle = '#1f7a34';
-    ctx.fillRect(x, y, UNIT, UNIT);
-    ctx.fillStyle = '#2fa347';
-    ctx.beginPath();
-    ctx.arc(x + UNIT * 0.3, y + UNIT * 0.3, UNIT * 0.28, 0, Math.PI * 2);
-    ctx.arc(x + UNIT * 0.7, y + UNIT * 0.6, UNIT * 0.3, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
-  }
-
-  drawEagle(ctx, x, y, alive) {
-    const s = TANK_SIZE;
-    if (alive) {
-      ctx.fillStyle = '#2b2b2b';
-      ctx.fillRect(x, y, s, s);
-      ctx.fillStyle = '#ffcc33';
-      ctx.beginPath();
-      ctx.moveTo(x + s / 2, y + 4);
-      ctx.lineTo(x + s - 6, y + s - 6);
-      ctx.lineTo(x + s / 2, y + s - 14);
-      ctx.lineTo(x + 6, y + s - 6);
-      ctx.closePath();
-      ctx.fill();
-    } else {
-      ctx.fillStyle = '#3a3a3a';
-      ctx.fillRect(x, y, s, s);
-      ctx.strokeStyle = '#ff5c33';
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.moveTo(x + 6, y + 6); ctx.lineTo(x + s - 6, y + s - 6);
-      ctx.moveTo(x + s - 6, y + 6); ctx.lineTo(x + 6, y + s - 6);
-      ctx.stroke();
-    }
+    this.view.render();
   }
 }

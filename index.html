@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <title>坦克大战 · Battle City</title>
-<link rel="stylesheet" href="style.css">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="style.css?v=1.1">
 </head>
 <body>
   <div class="app-shell">
@@ -11,6 +12,7 @@
     <div class="main-row">
       <div class="field-wrap">
         <canvas id="field"></canvas>
+        <div id="loading" class="loading">正在加载 3D 引擎…</div>
 
         <div id="overlay-menu" class="overlay">
           <h2>坦克大战</h2>
@@ -18,8 +20,9 @@
           <button id="btn-1p" class="menu-btn">① 单人模式</button>
           <button id="btn-2p" class="menu-btn">② 双人合作</button>
           <div class="help">
-            <p><b>P1</b>：方向键移动 &nbsp;|&nbsp; Enter / ？ 开火</p>
-            <p><b>P2</b>：WASD 移动 &nbsp;|&nbsp; 空格 开火</p>
+            <p><b>单人</b>：方向键 / WASD 移动 &nbsp;|&nbsp; Enter / 空格 开火</p>
+            <p><b>双人 P1</b>：方向键移动 &nbsp;|&nbsp; Enter / ？ 开火</p>
+            <p><b>双人 P2</b>：WASD 移动 &nbsp;|&nbsp; 空格 开火</p>
             <p>P 暂停 &nbsp;|&nbsp; M 静音</p>
           </div>
         </div>
@@ -74,13 +77,19 @@
     </div>
   </div>
 
-  <script src="js/constants.js"></script>
-  <script src="js/utils.js"></script>
-  <script src="js/levels.js"></script>
-  <script src="js/input.js"></script>
-  <script src="js/sound.js"></script>
-  <script src="js/entities.js"></script>
-  <script src="js/game.js"></script>
-  <script src="js/main.js"></script>
+  <script src="js/constants.js?v=1.1"></script>
+  <script src="js/utils.js?v=1.1"></script>
+  <script src="js/levels.js?v=1.1"></script>
+  <script src="js/input.js?v=1.1"></script>
+  <script src="js/sound.js?v=1.1"></script>
+  <script src="js/entities.js?v=1.1"></script>
+  <script src="js/render/gfx.js?v=1.1"></script>
+  <script src="js/render/models.js?v=1.1"></script>
+  <script src="js/render/effects.js?v=1.1"></script>
+  <script src="js/render/world.js?v=1.1"></script>
+  <script src="js/render/views.js?v=1.1"></script>
+  <script src="js/render/renderer3d.js?v=1.1"></script>
+  <script src="js/game.js?v=1.1"></script>
+  <script src="js/main.js?v=1.1"></script>
 </body>
 </html>
